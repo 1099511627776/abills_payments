@@ -97,8 +97,8 @@ def pay(billid,operator,sum,tid,ip,datt = None):
               values (%s     ,%s ,%s  ,%s ,%s    ,%s          ,%s    ,%s            ,%s ,INET_ATON(%s),%s)"""
     cur = db.cursor()
     if(cur.execute(sql,(billid,uid,dt,sum,sum,deposit,"tr_id:"+str(tid),"",operator,ip,dt)) == 1):
-    res = set_deposit(billid,deposit + sum)
-#   print res
+        res = set_deposit(billid,deposit + sum)
+    #   print res
     if res == 1:
         return {'result':'ok'}
     else:
