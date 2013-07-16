@@ -32,18 +32,18 @@ def check_user(uid):
     FROM users u 
         INNER JOIN users_pi upi ON u.uid = upi.uid WHERE u.bill_id = %s """
     if(cur.execute(sql,uid) != 0):
-    data = cur.fetchone()
-    return {
-        'result':'ok',
-        'id':data[0],
-        'uid':data[1],
-        'gid':data[2],
-        'fio':data[3],
-        'phone':data[4],
-        'addr':data[5]
-    }
+        data = cur.fetchone()
+        return {
+            'result':'ok',
+            'id':data[0],
+            'uid':data[1],
+            'gid':data[2],
+            'fio':data[3],
+            'phone':data[4],
+            'addr':data[5]
+        }
     else:
-    return {'result':'error','errno':1,'status':'unknown user'}
+        return {'result':'error','errno':1,'status':'unknown user'}
 
 def get_deposit(uid):
     global db
@@ -80,14 +80,14 @@ def check_tid(tid):
     sql = """ SELECT count(*) FROM payments WHERE ext_id = %s """
     cur = db.cursor()
     if(cur.execute(sql,"tr_id:"+str(tid)) != 0):
-    data = cur.fetchone()
-    if(data[0] != 0):
-        return {'result':'ok','tid-count':data[0]}
+        data = cur.fetchone()
+        if(data[0] != 0):
+            return {'result':'ok','tid-count':data[0]}
+        else:
+            return {'result':'error','tid-count':data[0],'errno':3}
+            #return {'result':'error','tid':data[0],'errno':4}
     else:
-        return {'result':'error','tid-count':data[0],'errno':3}
-        #return {'result':'error','tid':data[0],'errno':4}
-    else:
-    return {'result':'erorr','status':'db_error','errno':2}
+        return {'result':'erorr','status':'db_error','errno':2}
 
 def pay(billid,operator,sum,tid,ip,datt = None):
     uid = get_uid(billid);
@@ -99,12 +99,12 @@ def pay(billid,operator,sum,tid,ip,datt = None):
     if(cur.execute(sql,(billid,uid,dt,sum,sum,deposit,"tr_id:"+str(tid),"",operator,ip,dt)) == 1):
         res = set_deposit(billid,deposit + sum)
     #   print res
-    if res == 1:
-        return {'result':'ok'}
+        if res == 1:
+            return {'result':'ok'}
+        else:
+            return {'result':'error','status':'err_depo','errno':2}
     else:
-        return {'result':'error','status':'err_depo','errno':2}
-    else:
-    return {'result':'error','status':'fatal','errno':2}
+        return {'result':'error','status':'fatal','errno':2}
 
 #init()
 #uid = 10
