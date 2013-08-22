@@ -75,11 +75,11 @@ def get_uid(billid):
     data = cur.fetchone()
     return data[0]
 
-def check_tid(tid):
+def check_tid(tid,prefix="tr_id:"):
     global db
     sql = """ SELECT count(*) FROM payments WHERE ext_id = %s """
     cur = db.cursor()
-    if(cur.execute(sql,"tr_id:"+str(tid)) != 0):
+    if(cur.execute(sql,prefix+str(tid)) != 0):
         data = cur.fetchone()
         if(data[0] != 0):
             return {'result':'ok','tid-count':data[0]}
@@ -105,6 +105,51 @@ def pay(billid,operator,sum,tid,ip,datt = None):
             return {'result':'error','status':'err_depo','errno':2}
     else:
         return {'result':'error','status':'fatal','errno':2}
+
+def pay_order(billid,operator,sum,tid,ip,datt = None):
+    uid = get_uid(billid);
+    deposit = get_deposit2(billid)
+    dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    sql = """INSERT INTO payments(bill_id,uid,date,sum,amount,last_deposit,ext_id,inner_describe,aid,ip,reg_date) 
+              values (%s     ,%s ,%s  ,%s ,%s    ,%s          ,%s    ,%s            ,%s ,INET_ATON(%s),%s)"""
+    cur = db.cursor()
+    if(cur.execute(sql,(billid,uid,dt,0,0,deposit,"pending_id:"+str(tid),sum,operator,ip,dt)) == 1):
+#        res = set_deposit(billid,deposit + sum)
+    #   print res
+#        if res == 1:
+        return {'result':'ok'}
+#        else:
+#            return {'result':'error','status':'err_depo','errno':2}
+    else:
+        return {'result':'error','status':'fatal','errno':2}
+
+def delete_order(order_id):
+    sql = "DELETE FROM payments WHERE ext_id = %s"
+    cur = db.cursor()
+    cur.execute(sql,("pending_id:"+str(order_id),))
+
+def confirm_order(order_id):
+    sql = "SELECT inner_describe,date,bill_id FROM payments WHERE ext_id = %s"
+    cur = db.cursor()
+    dbl = check_tid(order_id,'pending_id:')
+    if(dbl['result'] == 'ok'):
+        if(cur.execute(sql,"pending_id:"+str(order_id)) != 0):
+        row = cur.fetchone()
+        summ = float(row[0])
+        date = row[1]
+        billid = row[2]
+        sql = "UPDATE payments SET sum = %s, amount = %s, ext_id = %s WHERE ext_id = %s"
+        res = cur.execute(sql,(summ,summ,"tr_id:"+str(order_id),"pending_id:"+str(order_id),))
+        if(res == 1):
+        deposit = get_deposit2(billid)
+        res = set_deposit(billid,deposit + summ)
+        return {'result':'ok','date':date}
+        else:
+        return {'result':'error','status':res,'date':date}
+    else:
+        return {'result':'error','status':'no transaction','date':''}
+    else:
+    return {'result':'error','status':'tid check error','date':''}
 
 #init()
 #uid = 10
