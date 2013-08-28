@@ -113,7 +113,7 @@ def pay_order(billid,operator,sum,tid,ip,datt = None):
     sql = """INSERT INTO payments(bill_id,uid,date,sum,amount,last_deposit,ext_id,inner_describe,aid,ip,reg_date) 
               values (%s     ,%s ,%s  ,%s ,%s    ,%s          ,%s    ,%s            ,%s ,INET_ATON(%s),%s)"""
     cur = db.cursor()
-    if(cur.execute(sql,(billid,uid,dt,0,0,deposit,"pending_id:"+str(tid),sum,operator,ip,dt)) == 1):
+    if(cur.execute(sql,(billid,uid,dt,0,0,deposit,"tr_id:"+str(tid),sum,operator,ip,dt)) == 1):
 #        res = set_deposit(billid,deposit + sum)
     #   print res
 #        if res == 1:
@@ -129,23 +129,27 @@ def delete_order(order_id):
     cur.execute(sql,("pending_id:"+str(order_id),))
 
 def confirm_order(order_id):
-    sql = "SELECT inner_describe,date,bill_id FROM payments WHERE ext_id = %s"
+    sql = "SELECT inner_describe,date,bill_id,sum FROM payments WHERE ext_id = %s"
     cur = db.cursor()
-    dbl = check_tid(order_id,'pending_id:')
+    dbl = check_tid(order_id)
     if(dbl['result'] == 'ok'):
-        if(cur.execute(sql,"pending_id:"+str(order_id)) != 0):
+        if(cur.execute(sql,"tr_id:"+str(order_id)) != 0):
         row = cur.fetchone()
         summ = float(row[0])
         date = row[1]
         billid = row[2]
-        sql = "UPDATE payments SET sum = %s, amount = %s, ext_id = %s WHERE ext_id = %s"
-        res = cur.execute(sql,(summ,summ,"tr_id:"+str(order_id),"pending_id:"+str(order_id),))
-        if(res == 1):
-        deposit = get_deposit2(billid)
-        res = set_deposit(billid,deposit + summ)
-        return {'result':'ok','date':date}
+        real_sum = float(row[3])
+        if real_sum == 0:
+        sql = "UPDATE payments SET sum = %s, amount = %s WHERE ext_id = %s"
+        res = cur.execute(sql,(summ,summ,"tr_id:"+str(order_id),))
+        if(cur.rowcount == 1):
+            deposit = get_deposit2(billid)
+            res = set_deposit(billid,deposit + summ)
+            return {'result':'ok','date':date,'status':'ok'}
         else:
-        return {'result':'error','status':res,'date':date}
+            return {'result':'error','status':'result == '+str(res),'date':date}
+        else:
+        return {'result':'ok','date':date,'status':'already confimed'}
     else:
         return {'result':'error','status':'no transaction','date':''}
     else:

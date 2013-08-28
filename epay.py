@@ -7,10 +7,11 @@ import os
 import datetime
 import hashlib
 import math
+import syslog
 from xml.dom.minidom import *
 
 cgitb.enable(format='text')
-operator = 17
+operator = 18
 dbmanager.init()
 
 ####errno : 1 - unknown user
@@ -20,21 +21,21 @@ dbmanager.init()
 ####errno : 5 - bad chacksum
 
 def process(xml_data):
+    syslog.syslog('Processing started')
     dt = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     aResult = ""
     xml = parseString(xml_data)
     check = xml.getElementsByTagName('Check')
     pay = xml.getElementsByTagName('Payment')
     confirm = xml.getElementsByTagName('Confirm')
+    syslog.syslog(syslog.LOG_DEBUG,xml_data)
     if(check != []):
-	servie_id = xml.getElementsByTagName('ServiceId')[0]
+	service_id = xml.getElementsByTagName('ServiceId')[0]
 	account = xml.getElementsByTagName('Account')[0].firstChild.nodeValue
 	#print account.nodeValue
 	result = dbmanager.check_user(account)
 	deposit = dbmanager.get_deposit2(account)
-	if(deposit < 0):
-	    deposit = -deposit
-	else:
+	if(deposit > 0):
 	    deposit = 0
 	#print result
 	if(result['result'] == 'ok'):
@@ -47,9 +48,9 @@ def process(xml_data):
 			<Name>%(fio)s</Name>
 			<Address>%(addr)s</Address>
 			<Balance>%(deposit)2g</Balance>
-			
+			<Account>%(account)s</Account>
 		    </AccountInfo>
-		</Response>""" % {'fio':result['fio'],'addr':result['addr'],'deposit':math.ceil(deposit),'dt':dt }
+		</Response>""" % {'fio':result['fio'],'addr':result['addr'],'deposit':math.floor(deposit),'dt':dt,'account':str(account)}
 	else:
 	    aResult = """
 		<Response>
@@ -99,6 +100,7 @@ def process(xml_data):
 			    <DateTime>%(dt)s</DateTime>
 			    <OrderDate>%(ddt)s</OrderDate>
 			</Response>""" % {'dt':dt,'status':result['status'],'ddt':result['date']}
+    syslog.syslog(syslog.LOG_DEBUG,aResult)
     return aResult
 
 print "Content-type: text/xml\n";
