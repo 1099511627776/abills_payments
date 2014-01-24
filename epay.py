@@ -30,76 +30,76 @@ def process(xml_data):
     confirm = xml.getElementsByTagName('Confirm')
     syslog.syslog(syslog.LOG_DEBUG,xml_data)
     if(check != []):
-	service_id = xml.getElementsByTagName('ServiceId')[0]
-	account = xml.getElementsByTagName('Account')[0].firstChild.nodeValue
-	#print account.nodeValue
-	result = dbmanager.check_user(account)
-	deposit = dbmanager.get_deposit2(account)
-	if(deposit > 0):
-	    deposit = 0
-	#print result
-	if(result['result'] == 'ok'):
-	    aResult = """
-		<Response>
-		    <StatusCode>0</StatusCode>
-		    <StatusDetail>Ok</StatusDetail>
-		    <DateTime>%(dt)s</DateTime>
-		    <AccountInfo>
-			<Name>%(fio)s</Name>
-			<Address>%(addr)s</Address>
-			<Balance>%(deposit)2g</Balance>
-			<Account>%(account)s</Account>
-		    </AccountInfo>
-		</Response>""" % {'fio':result['fio'],'addr':result['addr'],'deposit':math.floor(deposit),'dt':dt,'account':str(account)}
-	else:
-	    aResult = """
-		<Response>
-		    <StatusCode>-1</StatusCode>
-		    <StatusDetail>%(result)s</StatusDetail>
-		</Response>""" % {'result':result['status']}
+        service_id = xml.getElementsByTagName('ServiceId')[0]
+        account = xml.getElementsByTagName('Account')[0].firstChild.nodeValue
+        #print account.nodeValue
+        result = dbmanager.check_user(account)
+        deposit = dbmanager.get_deposit2(account)
+        if(deposit > 0):
+            deposit = 0
+        #print result
+        if(result['result'] == 'ok'):
+            aResult = """
+            <Response>
+                <StatusCode>0</StatusCode>
+                <StatusDetail>Ok</StatusDetail>
+                <DateTime>%(dt)s</DateTime>
+                <AccountInfo>
+                <Name>%(fio)s</Name>
+                <Address>%(addr)s</Address>
+                <Balance>%(deposit)2g</Balance>
+                <Account>%(account)s</Account>
+                </AccountInfo>
+            </Response>""" % {'fio':result['fio'],'addr':result['addr'],'deposit':math.floor(deposit),'dt':dt,'account':str(account)}
+        else:
+            aResult = """
+            <Response>
+                <StatusCode>-1</StatusCode>
+                <StatusDetail>%(result)s</StatusDetail>
+            </Response>""" % {'result':result['status']}
     elif(pay != []):
-	service_id = int(xml.getElementsByTagName('ServiceId')[0].firstChild.nodeValue)
-	uid = int(xml.getElementsByTagName('Account')[0].firstChild.nodeValue)
-	pkey = xml.getElementsByTagName('OrderId')[0].firstChild.nodeValue
-	summ = float(xml.getElementsByTagName('Amount')[0].firstChild.nodeValue)
-	datt = xml.getElementsByTagName('DateTime')[0].firstChild.nodeValue
-	ip = os.environ['REMOTE_ADDR']
-	#print service_id, uid, operator, summ, datt
-	result = dbmanager.pay_order(uid,operator,summ,pkey,ip,datt)
-	if(result['result'] == 'ok'):
-		aResult = """
-			<Response>
-			    <StatusCode>0</StatusCode>
-			    <StatusDetail>Order Created</StatusDetail>
-			    <DateTime>%(dt)s</DateTime>
-			    <PaymentId>%(tid)s</PaymentId>
-			</Response>""" % {'dt':dt,'tid':pkey}
-	else:
-		aResult = """
-			<Response>
-			    <StatusCode>-1</StatusCode>
-			    <StatusDetail>%(result)s</StatusDetail>
-			</Response>""" % {'result':result['status']}
+        service_id = int(xml.getElementsByTagName('ServiceId')[0].firstChild.nodeValue)
+        uid = int(xml.getElementsByTagName('Account')[0].firstChild.nodeValue)
+        pkey = xml.getElementsByTagName('OrderId')[0].firstChild.nodeValue
+        summ = float(xml.getElementsByTagName('Amount')[0].firstChild.nodeValue)
+        datt = xml.getElementsByTagName('DateTime')[0].firstChild.nodeValue
+        ip = os.environ['REMOTE_ADDR']
+        #print service_id, uid, operator, summ, datt
+        result = dbmanager.pay_order(uid,operator,summ,pkey,ip,datt)
+        if(result['result'] == 'ok'):
+            aResult = """
+                <Response>
+                    <StatusCode>0</StatusCode>
+                    <StatusDetail>Order Created</StatusDetail>
+                    <DateTime>%(dt)s</DateTime>
+                    <PaymentId>%(tid)s</PaymentId>
+                </Response>""" % {'dt':dt,'tid':pkey}
+        else:
+            aResult = """
+                <Response>
+                    <StatusCode>-1</StatusCode>
+                    <StatusDetail>%(result)s</StatusDetail>
+                </Response>""" % {'result':result['status']}
     elif( confirm != []):
-	service_id = int(xml.getElementsByTagName('ServiceId')[0].firstChild.nodeValue)
-	payment_id = xml.getElementsByTagName('PaymentId')[0].firstChild.nodeValue
-	result = dbmanager.confirm_order(payment_id)
-	if(result['result'] == 'ok'):
-		aResult = """
-			<Response>
-			    <StatusCode>0</StatusCode>
-			    <StatusDetail>Confirmed</StatusDetail>
-			    <DateTime>%(dt)s</DateTime>
-			    <OrderDate>%(ddt)s</OrderDate>
-			</Response>""" % {'dt':dt,'ddt':result['date']}
-	else:
-		aResult = """
-			<Response>
-			    <StatusCode>-1</StatusCode>
-			    <StatusDetail>%(status)s</StatusDetail>
-			    <DateTime>%(dt)s</DateTime>
-			    <OrderDate>%(ddt)s</OrderDate>
-			</Response>""" % {'dt':dt,'status':result['status'],'ddt':result['date']}
+        service_id = int(xml.getElementsByTagName('ServiceId')[0].firstChild.nodeValue)
+        payment_id = xml.getElementsByTagName('PaymentId')[0].firstChild.nodeValue
+        result = dbmanager.confirm_order(payment_id)
+        if(result['result'] == 'ok'):
+            aResult = """
+                <Response>
+                    <StatusCode>0</StatusCode>
+                    <StatusDetail>Confirmed</StatusDetail>
+                    <DateTime>%(dt)s</DateTime>
+                    <OrderDate>%(ddt)s</OrderDate>
+                </Response>""" % {'dt':dt,'ddt':result['date'].strftime("%Y-%m-%dT%H:%M:%S")}
+        else:
+            aResult = """
+                <Response>
+                    <StatusCode>-1</StatusCode>
+                    <StatusDetail>%(status)s</StatusDetail>
+                    <DateTime>%(dt)s</DateTime>
+                    <OrderDate>%(ddt)s</OrderDate>
+                </Response>""" % {'dt':dt,'status':result['status'],'ddt':result['date'].strftime("%Y-%m-%dT%H:%M:%S")}
     syslog.syslog(syslog.LOG_DEBUG,aResult)
     return aResult
 
